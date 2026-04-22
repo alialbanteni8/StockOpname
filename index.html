@@ -119,7 +119,7 @@ main { max-width: 1280px; margin: 0 auto; padding: 28px 32px; }
 
 /* STATS ROW */
 .stats-row {
-  display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px;
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px;
   margin-bottom: 24px;
 }
 .stat-card {
@@ -334,7 +334,7 @@ td.td-num { font-family: var(--mono); font-size: 13px; text-align: right; font-w
 <div class="topbar">
   <div class="brand">
     <div class="brand-icon">🏨</div>
-    <div class="brand-name">StockOpname <span>Harasa</span></div>
+    <div class="brand-name">StockOpname <span>F&B</span></div>
   </div>
   <div class="topbar-right">
     <div id="today-badge"></div>
@@ -395,7 +395,6 @@ td.td-num { font-family: var(--mono); font-size: 13px; text-align: right; font-w
         <th onclick="sort('bar','nama')">Nama Bahan</th>
         <th onclick="sort('bar','kategori')">Kategori</th>
         <th onclick="sort('bar','stok')" style="text-align:right">Stok Saat Ini</th>
-        <th style="text-align:right">Stok Min</th>
         <th>Satuan</th>
         <th>Status</th>
         <th onclick="sort('bar','update')">Update</th>
@@ -443,7 +442,6 @@ td.td-num { font-family: var(--mono); font-size: 13px; text-align: right; font-w
         <th onclick="sort('kitchen','nama')">Nama Bahan</th>
         <th onclick="sort('kitchen','kategori')">Kategori</th>
         <th onclick="sort('kitchen','stok')" style="text-align:right">Stok Saat Ini</th>
-        <th style="text-align:right">Stok Min</th>
         <th>Satuan</th>
         <th>Status</th>
         <th onclick="sort('kitchen','update')">Update</th>
@@ -484,16 +482,8 @@ td.td-num { font-family: var(--mono); font-size: 13px; text-align: right; font-w
         <input type="number" id="f-stok" placeholder="0" min="0" step="0.1">
       </div>
       <div class="form-group">
-        <label>Stok Minimum</label>
-        <input type="number" id="f-min" placeholder="0" min="0" step="0.1">
-      </div>
-      <div class="form-group">
         <label>Satuan</label>
         <input type="text" id="f-satuan" placeholder="kg, liter, btl, pcs...">
-      </div>
-      <div class="form-group">
-        <label>Harga Satuan (Rp)</label>
-        <input type="number" id="f-harga" placeholder="0" min="0">
       </div>
     </div>
     <div class="modal-footer">
@@ -551,10 +541,8 @@ function save(dept) { localStorage.setItem('so_' + dept, JSON.stringify(DB[dept]
 // ================================
 // HELPERS
 // ================================
-function status(stok, min) {
+function status(stok) {
   if (stok === 0) return 'habis';
-  if (stok < min * 0.5) return 'kritis';
-  if (stok < min) return 'rendah';
   return 'aman';
 }
 
@@ -596,7 +584,7 @@ function render(dept) {
   let rows = DB[dept].filter(d =>
     (d.nama.toLowerCase().includes(search) || d.kode.toLowerCase().includes(search)) &&
     (!katF || d.kategori === katF) &&
-    (!statF || status(d.stok, d.min) === statF)
+    (!statF || status(d.stok) === statF)
   );
 
   const s = sortState[dept];
@@ -610,14 +598,12 @@ function render(dept) {
 
   // stats
   const all = DB[dept];
-  const sOk = all.filter(d => status(d.stok,d.min)==='aman').length;
-  const sLow = all.filter(d => status(d.stok,d.min)==='rendah').length;
-  const sCrit = all.filter(d => ['kritis','habis'].includes(status(d.stok,d.min))).length;
+  const sAda = all.filter(d => d.stok > 0).length;
+  const sHabis = all.filter(d => d.stok === 0).length;
   document.getElementById('stats-' + dept).innerHTML = `
     <div class="stat-card s-total"><div class="stat-label">Total Bahan</div><div class="stat-val">${all.length}</div><div class="stat-sub">Item terdaftar</div></div>
-    <div class="stat-card s-ok"><div class="stat-label">Stok Aman</div><div class="stat-val">${sOk}</div><div class="stat-sub">Di atas minimum</div></div>
-    <div class="stat-card s-low"><div class="stat-label">Stok Rendah</div><div class="stat-val">${sLow}</div><div class="stat-sub">Perlu restock</div></div>
-    <div class="stat-card s-crit"><div class="stat-label">Stok Kritis/Habis</div><div class="stat-val">${sCrit}</div><div class="stat-sub">Tindakan segera</div></div>
+    <div class="stat-card s-ok"><div class="stat-label">Stok Ada</div><div class="stat-val">${sAda}</div><div class="stat-sub">Tersedia</div></div>
+    <div class="stat-card s-crit"><div class="stat-label">Stok Habis</div><div class="stat-val">${sHabis}</div><div class="stat-sub">Perlu restock</div></div>
   `;
 
   document.getElementById('tc-' + dept).textContent = all.length;
@@ -630,10 +616,9 @@ function render(dept) {
   }
 
   tbody.innerHTML = rows.map(d => {
-    const st = status(d.stok, d.min);
-    const pct = d.min > 0 ? Math.min(100, Math.round(d.stok/d.min*100)) : 100;
-    const fillCls = st==='aman' ? 'fill-ok' : st==='rendah' ? 'fill-low' : 'fill-crit';
-    const harga = d.harga ? 'Rp ' + Number(d.harga).toLocaleString('id-ID') : '—';
+    const st = status(d.stok);
+    const pct = Math.min(100, d.stok > 0 ? 100 : 0);
+    const fillCls = st==='aman' ? 'fill-ok' : 'fill-crit';
     return `<tr>
       <td class="td-kode">${d.kode}</td>
       <td class="td-nama">${d.nama}</td>
@@ -644,7 +629,6 @@ function render(dept) {
           <b>${d.stok}</b>
         </div>
       </td>
-      <td class="td-num" style="color:var(--muted)">${d.min}</td>
       <td style="color:var(--text2);font-size:12px">${d.satuan}</td>
       <td>${badgeHTML(st)}</td>
       <td style="color:var(--muted);font-size:12px;font-family:var(--mono)">${d.update}</td>
@@ -714,9 +698,7 @@ function openEdit(dept, id) {
   document.getElementById('f-nama').value = d.nama;
   document.getElementById('f-kategori').value = d.kategori;
   document.getElementById('f-stok').value = d.stok;
-  document.getElementById('f-min').value = d.min;
   document.getElementById('f-satuan').value = d.satuan;
-  document.getElementById('f-harga').value = d.harga || 0;
   const sb = document.getElementById('save-btn');
   sb.className = 'btn btn-' + dept;
   sb.textContent = 'Simpan';
@@ -732,20 +714,18 @@ function saveItem() {
   const nama = document.getElementById('f-nama').value.trim();
   const kategori = document.getElementById('f-kategori').value.trim();
   const stok = parseFloat(document.getElementById('f-stok').value) || 0;
-  const min = parseFloat(document.getElementById('f-min').value) || 0;
   const satuan = document.getElementById('f-satuan').value.trim();
-  const harga = parseFloat(document.getElementById('f-harga').value) || 0;
 
   if (!nama || !satuan) { toast('Nama dan satuan wajib diisi!', '❌'); return; }
 
   if (id) {
     const i = DB[dept].findIndex(x => x.id === id);
-    DB[dept][i] = { ...DB[dept][i], nama, kategori, stok, min, satuan, harga, update: today() };
+    DB[dept][i] = { ...DB[dept][i], nama, kategori, stok, satuan, update: today() };
     toast('Data berhasil diperbarui', '✓');
   } else {
     const newId = DB[dept].length ? Math.max(...DB[dept].map(x=>x.id)) + 1 : 1;
     const kode = document.getElementById('f-kode-display').textContent;
-    DB[dept].push({ id:newId, kode, nama, kategori, stok, min, satuan, harga, update: today() });
+    DB[dept].push({ id:newId, kode, nama, kategori, stok, satuan, update: today() });
     toast('Bahan baru ditambahkan', '✓');
   }
   save(dept);
@@ -789,7 +769,7 @@ function exportCSV() {
   const headers = ['Departemen','Kode','Nama','Kategori','Stok','Min Stok','Satuan','Harga','Status','Update'];
   const rows = DB[dept].map(d => [
     dept.toUpperCase(), d.kode, d.nama, d.kategori, d.stok, d.min, d.satuan, d.harga,
-    status(d.stok,d.min), d.update
+    status(d.stok), d.update
   ]);
   const csv = [headers,...rows].map(r=>r.join(',')).join('\n');
   const a = Object.assign(document.createElement('a'), {
