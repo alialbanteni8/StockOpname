@@ -1,0 +1,829 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Stock Opname — Bar & Kitchen</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+:root {
+  --bg: #f5f4f0;
+  --white: #ffffff;
+  --surface: #fefefe;
+  --border: #e8e5de;
+  --border2: #d5d0c5;
+
+  --bar: #1a3a5c;
+  --bar-light: #e8f0f8;
+  --bar-mid: #4a7fa8;
+  --bar-accent: #2563ab;
+
+  --kitchen: #2d4a1e;
+  --kitchen-light: #eaf2e5;
+  --kitchen-mid: #5a8a3a;
+  --kitchen-accent: #3d7a20;
+
+  --text: #1a1a18;
+  --text2: #5a5850;
+  --muted: #9a9588;
+
+  --green: #2ea855;
+  --yellow: #d4900a;
+  --red: #c93535;
+  --red-light: #fde8e8;
+  --yellow-light: #fef3d8;
+  --green-light: #e4f5eb;
+
+  --sans: 'Plus Jakarta Sans', sans-serif;
+  --mono: 'JetBrains Mono', monospace;
+  --radius: 12px;
+  --shadow: 0 1px 3px rgba(0,0,0,0.08), 0 4px 16px rgba(0,0,0,0.06);
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.06);
+}
+
+body {
+  background: var(--bg);
+  font-family: var(--sans);
+  color: var(--text);
+  min-height: 100vh;
+}
+
+/* TOPBAR */
+.topbar {
+  background: var(--white);
+  border-bottom: 1px solid var(--border);
+  padding: 0 32px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 60px;
+  position: sticky; top: 0; z-index: 100;
+}
+.brand { display: flex; align-items: center; gap: 10px; }
+.brand-icon {
+  width: 32px; height: 32px; border-radius: 8px;
+  background: linear-gradient(135deg, var(--bar) 0%, var(--kitchen) 100%);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 15px;
+}
+.brand-name { font-size: 15px; font-weight: 700; letter-spacing: -0.01em; }
+.brand-name span { color: var(--muted); font-weight: 400; }
+
+.topbar-right { display: flex; align-items: center; gap: 12px; }
+#today-badge {
+  background: var(--bg); border: 1px solid var(--border);
+  padding: 5px 12px; border-radius: 20px;
+  font-family: var(--mono); font-size: 11px; color: var(--text2);
+}
+
+/* TABS */
+.tabs-wrap {
+  background: var(--white);
+  border-bottom: 1px solid var(--border);
+  padding: 0 32px;
+  display: flex; gap: 0;
+}
+.tab-btn {
+  padding: 14px 24px; background: none; border: none;
+  font-family: var(--sans); font-size: 14px; font-weight: 600;
+  color: var(--muted); cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: all 0.2s; display: flex; align-items: center; gap: 8px;
+  margin-bottom: -1px;
+}
+.tab-btn:hover { color: var(--text); }
+.tab-btn.active-bar { color: var(--bar-accent); border-bottom-color: var(--bar-accent); }
+.tab-btn.active-kitchen { color: var(--kitchen-accent); border-bottom-color: var(--kitchen-accent); }
+.tab-dot {
+  width: 20px; height: 20px; border-radius: 6px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px;
+}
+.tab-btn.active-bar .tab-dot { background: var(--bar-light); }
+.tab-btn.active-kitchen .tab-dot { background: var(--kitchen-light); }
+
+.tab-count {
+  background: var(--bg); border: 1px solid var(--border);
+  padding: 2px 7px; border-radius: 10px;
+  font-size: 11px; font-family: var(--mono); color: var(--text2);
+}
+
+/* MAIN */
+main { max-width: 1280px; margin: 0 auto; padding: 28px 32px; }
+
+/* SECTION */
+.section { display: none; }
+.section.active { display: block; }
+
+/* STATS ROW */
+.stats-row {
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px;
+  margin-bottom: 24px;
+}
+.stat-card {
+  background: var(--white); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 18px 20px;
+  box-shadow: var(--shadow-sm);
+}
+.stat-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin-bottom: 8px; }
+.stat-val { font-size: 28px; font-weight: 800; line-height: 1; }
+.stat-sub { font-size: 12px; color: var(--muted); margin-top: 4px; }
+.stat-card.s-total .stat-val { color: var(--text); }
+.stat-card.s-ok .stat-val { color: var(--green); }
+.stat-card.s-low .stat-val { color: var(--yellow); }
+.stat-card.s-crit .stat-val { color: var(--red); }
+
+/* TOOLBAR */
+.toolbar {
+  display: flex; align-items: center; gap: 10px; margin-bottom: 16px; flex-wrap: wrap;
+}
+.search-wrap {
+  flex: 1; min-width: 200px; position: relative;
+}
+.search-wrap input {
+  width: 100%; background: var(--white);
+  border: 1px solid var(--border); border-radius: 8px;
+  padding: 9px 14px 9px 36px;
+  font-family: var(--sans); font-size: 13px; color: var(--text);
+  outline: none; transition: border-color 0.2s;
+}
+.search-wrap input:focus { border-color: var(--bar-mid); }
+.search-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); font-size: 13px; color: var(--muted); pointer-events: none; }
+
+select {
+  background: var(--white); border: 1px solid var(--border);
+  border-radius: 8px; padding: 9px 12px;
+  font-family: var(--sans); font-size: 13px; color: var(--text);
+  cursor: pointer; outline: none; transition: border-color 0.2s;
+}
+select:focus { border-color: var(--bar-mid); }
+
+.btn {
+  padding: 9px 16px; border-radius: 8px; border: 1px solid var(--border);
+  background: var(--white); font-family: var(--sans); font-size: 13px; font-weight: 600;
+  cursor: pointer; transition: all 0.15s; color: var(--text2);
+  display: flex; align-items: center; gap: 6px;
+}
+.btn:hover { border-color: var(--border2); background: var(--bg); }
+.btn-bar { background: var(--bar); color: #fff; border-color: var(--bar); }
+.btn-bar:hover { background: #1e4a72; }
+.btn-kitchen { background: var(--kitchen); color: #fff; border-color: var(--kitchen); }
+.btn-kitchen:hover { background: #3a5e28; }
+.btn-export { color: var(--green); border-color: #c5e8d0; }
+.btn-export:hover { background: var(--green-light); border-color: var(--green); }
+
+/* TABLE */
+.table-card {
+  background: var(--white); border: 1px solid var(--border);
+  border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow-sm);
+}
+.table-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 20px 12px; border-bottom: 1px solid var(--border);
+}
+.table-title { font-size: 13px; font-weight: 700; color: var(--text2); }
+.table-count { font-family: var(--mono); font-size: 11px; color: var(--muted); }
+
+table { width: 100%; border-collapse: collapse; }
+thead tr { background: var(--bg); }
+th {
+  padding: 10px 16px; text-align: left;
+  font-size: 11px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.07em; color: var(--muted);
+  border-bottom: 1px solid var(--border);
+  cursor: pointer; user-select: none; white-space: nowrap;
+  transition: color 0.15s;
+}
+th:hover { color: var(--text); }
+tbody tr { border-bottom: 1px solid var(--border); transition: background 0.1s; }
+tbody tr:last-child { border-bottom: none; }
+tbody tr:hover { background: #fafaf8; }
+
+td { padding: 12px 16px; font-size: 13px; vertical-align: middle; }
+td.td-kode { font-family: var(--mono); font-size: 11px; color: var(--muted); }
+td.td-nama { font-weight: 600; font-size: 14px; }
+td.td-right { text-align: right; }
+td.td-num { font-family: var(--mono); font-size: 13px; text-align: right; font-weight: 500; }
+
+/* KATEGORI PILL */
+.kat-pill {
+  display: inline-block; padding: 3px 9px; border-radius: 6px;
+  font-size: 11px; font-weight: 600; letter-spacing: 0.02em;
+  background: var(--bg); color: var(--text2); border: 1px solid var(--border);
+}
+
+/* STOCK BAR */
+.sbar-wrap { display: flex; align-items: center; gap: 8px; justify-content: flex-end; }
+.sbar-bg { width: 64px; height: 5px; background: var(--bg); border-radius: 3px; flex-shrink: 0; overflow: hidden; }
+.sbar-fill { height: 100%; border-radius: 3px; }
+.fill-ok { background: var(--green); }
+.fill-low { background: var(--yellow); }
+.fill-crit { background: var(--red); }
+
+/* BADGE */
+.badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 4px 9px; border-radius: 6px;
+  font-size: 11px; font-weight: 700; letter-spacing: 0.04em;
+}
+.badge-ok { background: var(--green-light); color: #1d7a3f; }
+.badge-low { background: var(--yellow-light); color: #9a6800; }
+.badge-crit { background: var(--red-light); color: #9a2020; }
+.badge-empty { background: #fde8e8; color: #9a2020; border: 1px solid #f5c5c5; }
+
+/* ACTION BTNS */
+.act-btn {
+  width: 28px; height: 28px; border-radius: 6px;
+  border: 1px solid var(--border); background: none;
+  cursor: pointer; font-size: 12px; transition: all 0.15s;
+  display: inline-flex; align-items: center; justify-content: center;
+  color: var(--muted);
+}
+.act-btn:hover { border-color: var(--border2); color: var(--text); background: var(--bg); }
+.act-btn.del:hover { border-color: #f5c5c5; color: var(--red); background: var(--red-light); }
+.act-btn.upd:hover { border-color: #c5e8d0; color: var(--green); background: var(--green-light); }
+
+/* MODAL */
+.overlay {
+  display: none; position: fixed; inset: 0;
+  background: rgba(26,26,24,0.5); backdrop-filter: blur(4px);
+  z-index: 300; align-items: center; justify-content: center;
+}
+.overlay.open { display: flex; }
+.modal {
+  background: var(--white); border-radius: 16px;
+  padding: 28px 28px 24px; width: 520px; max-width: 95vw;
+  box-shadow: 0 8px 40px rgba(0,0,0,0.18);
+  animation: pop 0.2s cubic-bezier(.34,1.56,.64,1);
+}
+@keyframes pop { from{opacity:0;transform:scale(.96)} to{opacity:1;transform:scale(1)} }
+
+.modal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 22px; }
+.modal-title { font-size: 17px; font-weight: 800; }
+.modal-close { width: 30px; height: 30px; border-radius: 8px; border: 1px solid var(--border); background: none; cursor: pointer; font-size: 16px; color: var(--muted); transition: all 0.15s; }
+.modal-close:hover { background: var(--bg); color: var(--text); }
+
+.dept-indicator {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 4px 10px; border-radius: 6px;
+  font-size: 12px; font-weight: 700; margin-left: 10px;
+}
+.dept-bar { background: var(--bar-light); color: var(--bar-accent); }
+.dept-kitchen { background: var(--kitchen-light); color: var(--kitchen-accent); }
+
+.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.fg-full { grid-column: 1 / -1; }
+.form-group { display: flex; flex-direction: column; gap: 5px; }
+.form-group label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; color: var(--muted); }
+.form-group input, .form-group select {
+  background: var(--bg); border: 1px solid var(--border);
+  border-radius: 8px; padding: 9px 12px;
+  font-family: var(--sans); font-size: 13px; color: var(--text);
+  outline: none; transition: border-color 0.2s;
+}
+.form-group input:focus, .form-group select:focus { border-color: var(--bar-mid); background: var(--white); }
+.kode-auto {
+  font-family: var(--mono); font-size: 13px;
+  background: var(--bg); border: 1px solid var(--border);
+  border-radius: 8px; padding: 9px 12px; color: var(--muted);
+}
+
+.modal-footer { display: flex; gap: 10px; justify-content: flex-end; margin-top: 22px; padding-top: 18px; border-top: 1px solid var(--border); }
+
+/* TOAST */
+#toast {
+  position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(60px);
+  background: var(--text); color: var(--white);
+  padding: 11px 20px; border-radius: 30px;
+  font-size: 13px; font-weight: 500; opacity: 0;
+  transition: all 0.3s cubic-bezier(.34,1.56,.64,1);
+  z-index: 999; white-space: nowrap; box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+  display: flex; align-items: center; gap: 8px;
+}
+#toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+/* EMPTY */
+.empty-row td { text-align: center; padding: 48px; color: var(--muted); font-size: 14px; }
+
+/* DIVIDER */
+.dept-divider {
+  display: flex; align-items: center; gap: 10px; margin-bottom: 20px; margin-top: 4px;
+}
+.dept-divider-line { flex: 1; height: 1px; background: var(--border); }
+.dept-divider-label {
+  font-size: 11px; font-weight: 800; text-transform: uppercase;
+  letter-spacing: 0.12em; padding: 4px 12px; border-radius: 20px;
+}
+.dl-bar { color: var(--bar-accent); background: var(--bar-light); }
+.dl-kitchen { color: var(--kitchen-accent); background: var(--kitchen-light); }
+
+@media(max-width:768px){
+  .topbar,.tabs-wrap,main{padding-left:16px;padding-right:16px}
+  .stats-row{grid-template-columns:1fr 1fr}
+  .form-grid{grid-template-columns:1fr}
+  .fg-full{grid-column:1}
+  .sbar-bg{display:none}
+}
+</style>
+</head>
+<body>
+
+<!-- TOPBAR -->
+<div class="topbar">
+  <div class="brand">
+    <div class="brand-icon">🏨</div>
+    <div class="brand-name">StockOpname <span>Harasa</span></div>
+  </div>
+  <div class="topbar-right">
+    <div id="today-badge"></div>
+    <button class="btn btn-export" onclick="exportCSV()">⬇ Export CSV</button>
+  </div>
+</div>
+
+<!-- TABS -->
+<div class="tabs-wrap">
+  <button class="tab-btn active-bar" id="tab-bar" onclick="switchTab('bar')">
+    <span class="tab-dot">🍹</span>
+    BAR
+    <span class="tab-count" id="tc-bar">0</span>
+  </button>
+  <button class="tab-btn" id="tab-kitchen" onclick="switchTab('kitchen')">
+    <span class="tab-dot">🍳</span>
+    KITCHEN
+    <span class="tab-count" id="tc-kitchen">0</span>
+  </button>
+</div>
+
+<main>
+
+<!-- ======================== BAR ======================== -->
+<div class="section active" id="sec-bar">
+  <div class="dept-divider">
+    <div class="dept-divider-line"></div>
+    <div class="dept-divider-label dl-bar">🍹 Bar — Persediaan Minuman & Bar Supply</div>
+    <div class="dept-divider-line"></div>
+  </div>
+
+  <div class="stats-row" id="stats-bar"></div>
+
+  <div class="toolbar">
+    <div class="search-wrap">
+      <span class="search-icon">🔍</span>
+      <input type="text" id="srch-bar" placeholder="Cari nama atau kode bahan bar..." oninput="render('bar')">
+    </div>
+    <select id="kat-bar" onchange="render('bar')"><option value="">Semua Kategori</option></select>
+    <select id="stat-bar" onchange="render('bar')">
+      <option value="">Semua Status</option>
+      <option value="aman">Aman</option>
+      <option value="rendah">Rendah</option>
+      <option value="kritis">Kritis</option>
+      <option value="habis">Habis</option>
+    </select>
+    <button class="btn btn-bar" onclick="openAdd('bar')">+ Tambah Bahan Bar</button>
+  </div>
+
+  <div class="table-card">
+    <div class="table-head">
+      <div class="table-title">Daftar Bahan Bar</div>
+      <div class="table-count" id="cnt-bar">— item</div>
+    </div>
+    <table>
+      <thead><tr>
+        <th onclick="sort('bar','kode')">Kode</th>
+        <th onclick="sort('bar','nama')">Nama Bahan</th>
+        <th onclick="sort('bar','kategori')">Kategori</th>
+        <th onclick="sort('bar','stok')" style="text-align:right">Stok Saat Ini</th>
+        <th style="text-align:right">Stok Min</th>
+        <th>Satuan</th>
+        <th>Status</th>
+        <th onclick="sort('bar','update')">Update</th>
+        <th style="text-align:center">Aksi</th>
+      </tr></thead>
+      <tbody id="tbody-bar"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ======================== KITCHEN ======================== -->
+<div class="section" id="sec-kitchen">
+  <div class="dept-divider">
+    <div class="dept-divider-line"></div>
+    <div class="dept-divider-label dl-kitchen">🍳 Kitchen — Persediaan Bahan Masak</div>
+    <div class="dept-divider-line"></div>
+  </div>
+
+  <div class="stats-row" id="stats-kitchen"></div>
+
+  <div class="toolbar">
+    <div class="search-wrap">
+      <span class="search-icon">🔍</span>
+      <input type="text" id="srch-kitchen" placeholder="Cari nama atau kode bahan kitchen..." oninput="render('kitchen')">
+    </div>
+    <select id="kat-kitchen" onchange="render('kitchen')"><option value="">Semua Kategori</option></select>
+    <select id="stat-kitchen" onchange="render('kitchen')">
+      <option value="">Semua Status</option>
+      <option value="aman">Aman</option>
+      <option value="rendah">Rendah</option>
+      <option value="kritis">Kritis</option>
+      <option value="habis">Habis</option>
+    </select>
+    <button class="btn btn-kitchen" onclick="openAdd('kitchen')">+ Tambah Bahan Kitchen</button>
+  </div>
+
+  <div class="table-card">
+    <div class="table-head">
+      <div class="table-title">Daftar Bahan Kitchen</div>
+      <div class="table-count" id="cnt-kitchen">— item</div>
+    </div>
+    <table>
+      <thead><tr>
+        <th onclick="sort('kitchen','kode')">Kode</th>
+        <th onclick="sort('kitchen','nama')">Nama Bahan</th>
+        <th onclick="sort('kitchen','kategori')">Kategori</th>
+        <th onclick="sort('kitchen','stok')" style="text-align:right">Stok Saat Ini</th>
+        <th style="text-align:right">Stok Min</th>
+        <th>Satuan</th>
+        <th>Status</th>
+        <th onclick="sort('kitchen','update')">Update</th>
+        <th style="text-align:center">Aksi</th>
+      </tr></thead>
+      <tbody id="tbody-kitchen"></tbody>
+    </table>
+  </div>
+</div>
+
+</main>
+
+<!-- MODAL -->
+<div class="overlay" id="overlay">
+  <div class="modal">
+    <div class="modal-header">
+      <div>
+        <span class="modal-title" id="modal-title">Tambah Bahan</span>
+        <span class="dept-indicator" id="modal-dept-badge"></span>
+      </div>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="form-grid">
+      <div class="form-group">
+        <label>Kode Bahan (Auto)</label>
+        <div class="kode-auto" id="f-kode-display">—</div>
+      </div>
+      <div class="form-group">
+        <label>Kategori</label>
+        <input type="text" id="f-kategori" placeholder="cth: Spirit, Garnish...">
+      </div>
+      <div class="form-group fg-full">
+        <label>Nama Bahan</label>
+        <input type="text" id="f-nama" placeholder="Nama lengkap bahan">
+      </div>
+      <div class="form-group">
+        <label>Stok Saat Ini</label>
+        <input type="number" id="f-stok" placeholder="0" min="0" step="0.1">
+      </div>
+      <div class="form-group">
+        <label>Stok Minimum</label>
+        <input type="number" id="f-min" placeholder="0" min="0" step="0.1">
+      </div>
+      <div class="form-group">
+        <label>Satuan</label>
+        <input type="text" id="f-satuan" placeholder="kg, liter, btl, pcs...">
+      </div>
+      <div class="form-group">
+        <label>Harga Satuan (Rp)</label>
+        <input type="number" id="f-harga" placeholder="0" min="0">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal()">Batal</button>
+      <button class="btn" id="save-btn" onclick="saveItem()">Simpan</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+// ================================
+// DATA SEED
+// ================================
+const SEED = {
+  bar: [
+    {id:1,kode:'BAR-001',nama:'Vodka Absolut',kategori:'Spirit',stok:8,min:5,satuan:'btl',harga:380000,update:'2025-04-21'},
+    {id:2,kode:'BAR-002',nama:'Rum Bacardi White',kategori:'Spirit',stok:3,min:5,satuan:'btl',harga:310000,update:'2025-04-21'},
+    {id:3,kode:'BAR-003',nama:'Gin Beefeater',kategori:'Spirit',stok:0,min:3,satuan:'btl',harga:420000,update:'2025-04-19'},
+    {id:4,kode:'BAR-004',nama:'Triple Sec',kategori:'Liqueur',stok:6,min:3,satuan:'btl',harga:180000,update:'2025-04-20'},
+    {id:5,kode:'BAR-005',nama:'Simple Syrup',kategori:'Sirup',stok:4,min:5,satuan:'liter',harga:25000,update:'2025-04-22'},
+    {id:6,kode:'BAR-006',nama:'Lime Juice',kategori:'Mixer',stok:3,min:5,satuan:'liter',harga:35000,update:'2025-04-22'},
+    {id:7,kode:'BAR-007',nama:'Tonic Water',kategori:'Mixer',stok:48,min:24,satuan:'kaleng',harga:12000,update:'2025-04-20'},
+    {id:8,kode:'BAR-008',nama:'Mint Leaves',kategori:'Garnish',stok:1,min:3,satuan:'ikat',harga:8000,update:'2025-04-21'},
+    {id:9,kode:'BAR-009',nama:'Grenadine Syrup',kategori:'Sirup',stok:2,min:2,satuan:'btl',harga:65000,update:'2025-04-19'},
+    {id:10,kode:'BAR-010',nama:'Coconut Cream',kategori:'Mixer',stok:12,min:6,satuan:'kaleng',harga:22000,update:'2025-04-18'},
+  ],
+  kitchen: [
+    {id:1,kode:'KTC-001',nama:'Tepung Terigu',kategori:'Tepung',stok:50,min:20,satuan:'kg',harga:12000,update:'2025-04-20'},
+    {id:2,kode:'KTC-002',nama:'Gula Pasir',kategori:'Pemanis',stok:15,min:20,satuan:'kg',harga:15000,update:'2025-04-21'},
+    {id:3,kode:'KTC-003',nama:'Minyak Goreng',kategori:'Minyak',stok:5,min:10,satuan:'liter',harga:18000,update:'2025-04-21'},
+    {id:4,kode:'KTC-004',nama:'Garam Halus',kategori:'Bumbu',stok:8,min:5,satuan:'kg',harga:3000,update:'2025-04-19'},
+    {id:5,kode:'KTC-005',nama:'Mentega',kategori:'Lemak',stok:0,min:5,satuan:'kg',harga:40000,update:'2025-04-18'},
+    {id:6,kode:'KTC-006',nama:'Telur Ayam',kategori:'Protein',stok:120,min:50,satuan:'butir',harga:2000,update:'2025-04-22'},
+    {id:7,kode:'KTC-007',nama:'Susu UHT',kategori:'Dairy',stok:30,min:24,satuan:'liter',harga:16000,update:'2025-04-20'},
+    {id:8,kode:'KTC-008',nama:'Bawang Putih',kategori:'Bumbu',stok:7,min:5,satuan:'kg',harga:28000,update:'2025-04-21'},
+    {id:9,kode:'KTC-009',nama:'Daging Ayam',kategori:'Protein',stok:8,min:10,satuan:'kg',harga:38000,update:'2025-04-22'},
+    {id:10,kode:'KTC-010',nama:'Keju Mozzarella',kategori:'Dairy',stok:2,min:5,satuan:'kg',harga:120000,update:'2025-04-20'},
+    {id:11,kode:'KTC-011',nama:'Pasta Spagetti',kategori:'Karbohidrat',stok:15,min:10,satuan:'kg',harga:22000,update:'2025-04-19'},
+    {id:12,kode:'KTC-012',nama:'Saus Tomat',kategori:'Saus',stok:6,min:5,satuan:'kg',harga:18000,update:'2025-04-18'},
+  ],
+};
+
+let DB = {
+  bar: JSON.parse(localStorage.getItem('so_bar') || 'null') || SEED.bar,
+  kitchen: JSON.parse(localStorage.getItem('so_kitchen') || 'null') || SEED.kitchen,
+};
+
+let sortState = { bar: {key:null,dir:1}, kitchen: {key:null,dir:1} };
+let editState = { dept: null, id: null };
+
+function save(dept) { localStorage.setItem('so_' + dept, JSON.stringify(DB[dept])); }
+
+// ================================
+// HELPERS
+// ================================
+function status(stok, min) {
+  if (stok === 0) return 'habis';
+  if (stok < min * 0.5) return 'kritis';
+  if (stok < min) return 'rendah';
+  return 'aman';
+}
+
+function badgeHTML(s) {
+  const map = {
+    aman:   ['badge-ok','✓ Aman'],
+    rendah: ['badge-low','⚠ Rendah'],
+    kritis: ['badge-crit','✗ Kritis'],
+    habis:  ['badge-empty','✗ Habis'],
+  };
+  const [c,l] = map[s];
+  return `<span class="badge ${c}">${l}</span>`;
+}
+
+function today() { return new Date().toISOString().split('T')[0]; }
+
+function nextKode(dept) {
+  const prefix = dept === 'bar' ? 'BAR' : 'KTC';
+  const nums = DB[dept].map(d => parseInt(d.kode.split('-')[1]) || 0);
+  const next = nums.length ? Math.max(...nums) + 1 : 1;
+  return `${prefix}-${String(next).padStart('003', '0')}`;
+}
+
+// ================================
+// RENDER
+// ================================
+function render(dept) {
+  const search = document.getElementById('srch-' + dept).value.toLowerCase();
+  const katF = document.getElementById('kat-' + dept).value;
+  const statF = document.getElementById('stat-' + dept).value;
+
+  // update kategori dropdown
+  const cats = [...new Set(DB[dept].map(d => d.kategori))].sort();
+  const katSel = document.getElementById('kat-' + dept);
+  const curKat = katSel.value;
+  katSel.innerHTML = '<option value="">Semua Kategori</option>' +
+    cats.map(c => `<option value="${c}"${c===curKat?' selected':''}>${c}</option>`).join('');
+
+  let rows = DB[dept].filter(d =>
+    (d.nama.toLowerCase().includes(search) || d.kode.toLowerCase().includes(search)) &&
+    (!katF || d.kategori === katF) &&
+    (!statF || status(d.stok, d.min) === statF)
+  );
+
+  const s = sortState[dept];
+  if (s.key) {
+    rows.sort((a,b) => {
+      let va = a[s.key], vb = b[s.key];
+      if (typeof va === 'string') { va = va.toLowerCase(); vb = vb.toLowerCase(); }
+      return va < vb ? -s.dir : va > vb ? s.dir : 0;
+    });
+  }
+
+  // stats
+  const all = DB[dept];
+  const sOk = all.filter(d => status(d.stok,d.min)==='aman').length;
+  const sLow = all.filter(d => status(d.stok,d.min)==='rendah').length;
+  const sCrit = all.filter(d => ['kritis','habis'].includes(status(d.stok,d.min))).length;
+  document.getElementById('stats-' + dept).innerHTML = `
+    <div class="stat-card s-total"><div class="stat-label">Total Bahan</div><div class="stat-val">${all.length}</div><div class="stat-sub">Item terdaftar</div></div>
+    <div class="stat-card s-ok"><div class="stat-label">Stok Aman</div><div class="stat-val">${sOk}</div><div class="stat-sub">Di atas minimum</div></div>
+    <div class="stat-card s-low"><div class="stat-label">Stok Rendah</div><div class="stat-val">${sLow}</div><div class="stat-sub">Perlu restock</div></div>
+    <div class="stat-card s-crit"><div class="stat-label">Stok Kritis/Habis</div><div class="stat-val">${sCrit}</div><div class="stat-sub">Tindakan segera</div></div>
+  `;
+
+  document.getElementById('tc-' + dept).textContent = all.length;
+  document.getElementById('cnt-' + dept).textContent = `${rows.length} item`;
+
+  const tbody = document.getElementById('tbody-' + dept);
+  if (!rows.length) {
+    tbody.innerHTML = '<tr class="empty-row"><td colspan="9">Tidak ada data yang cocok dengan filter</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = rows.map(d => {
+    const st = status(d.stok, d.min);
+    const pct = d.min > 0 ? Math.min(100, Math.round(d.stok/d.min*100)) : 100;
+    const fillCls = st==='aman' ? 'fill-ok' : st==='rendah' ? 'fill-low' : 'fill-crit';
+    const harga = d.harga ? 'Rp ' + Number(d.harga).toLocaleString('id-ID') : '—';
+    return `<tr>
+      <td class="td-kode">${d.kode}</td>
+      <td class="td-nama">${d.nama}</td>
+      <td><span class="kat-pill">${d.kategori}</span></td>
+      <td class="td-num">
+        <div class="sbar-wrap">
+          <div class="sbar-bg"><div class="sbar-fill ${fillCls}" style="width:${pct}%"></div></div>
+          <b>${d.stok}</b>
+        </div>
+      </td>
+      <td class="td-num" style="color:var(--muted)">${d.min}</td>
+      <td style="color:var(--text2);font-size:12px">${d.satuan}</td>
+      <td>${badgeHTML(st)}</td>
+      <td style="color:var(--muted);font-size:12px;font-family:var(--mono)">${d.update}</td>
+      <td style="text-align:center;white-space:nowrap">
+        <button class="act-btn upd" title="Update Stok" onclick="quickUpdate('${dept}',${d.id})">↺</button>
+        <button class="act-btn" title="Edit" onclick="openEdit('${dept}',${d.id})">✎</button>
+        <button class="act-btn del" title="Hapus" onclick="delItem('${dept}',${d.id})">✕</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+// ================================
+// SORT
+// ================================
+function sort(dept, key) {
+  const s = sortState[dept];
+  s.dir = s.key === key ? s.dir * -1 : 1;
+  s.key = key;
+  render(dept);
+}
+
+// ================================
+// TAB
+// ================================
+let curTab = 'bar';
+function switchTab(dept) {
+  curTab = dept;
+  ['bar','kitchen'].forEach(d => {
+    document.getElementById('sec-' + d).classList.toggle('active', d === dept);
+    const btn = document.getElementById('tab-' + d);
+    btn.className = 'tab-btn';
+    if (d === dept) btn.classList.add('active-' + d);
+  });
+  render(dept);
+}
+
+// ================================
+// MODAL
+// ================================
+function openAdd(dept) {
+  editState = { dept, id: null };
+  const kode = nextKode(dept);
+  document.getElementById('modal-title').textContent = 'Tambah Bahan';
+  document.getElementById('modal-dept-badge').className = 'dept-indicator dept-' + dept;
+  document.getElementById('modal-dept-badge').textContent = dept === 'bar' ? '🍹 Bar' : '🍳 Kitchen';
+  document.getElementById('f-kode-display').textContent = kode;
+  document.getElementById('f-nama').value = '';
+  document.getElementById('f-kategori').value = '';
+  document.getElementById('f-stok').value = 0;
+  document.getElementById('f-min').value = 0;
+  document.getElementById('f-satuan').value = '';
+  document.getElementById('f-harga').value = 0;
+  const sb = document.getElementById('save-btn');
+  sb.className = 'btn btn-' + dept;
+  sb.textContent = 'Tambah';
+  document.getElementById('overlay').classList.add('open');
+}
+
+function openEdit(dept, id) {
+  const d = DB[dept].find(x => x.id === id);
+  editState = { dept, id };
+  document.getElementById('modal-title').textContent = 'Edit Bahan';
+  document.getElementById('modal-dept-badge').className = 'dept-indicator dept-' + dept;
+  document.getElementById('modal-dept-badge').textContent = dept === 'bar' ? '🍹 Bar' : '🍳 Kitchen';
+  document.getElementById('f-kode-display').textContent = d.kode;
+  document.getElementById('f-nama').value = d.nama;
+  document.getElementById('f-kategori').value = d.kategori;
+  document.getElementById('f-stok').value = d.stok;
+  document.getElementById('f-min').value = d.min;
+  document.getElementById('f-satuan').value = d.satuan;
+  document.getElementById('f-harga').value = d.harga || 0;
+  const sb = document.getElementById('save-btn');
+  sb.className = 'btn btn-' + dept;
+  sb.textContent = 'Simpan';
+  document.getElementById('overlay').classList.add('open');
+}
+
+function closeModal() {
+  document.getElementById('overlay').classList.remove('open');
+}
+
+function saveItem() {
+  const { dept, id } = editState;
+  const nama = document.getElementById('f-nama').value.trim();
+  const kategori = document.getElementById('f-kategori').value.trim();
+  const stok = parseFloat(document.getElementById('f-stok').value) || 0;
+  const min = parseFloat(document.getElementById('f-min').value) || 0;
+  const satuan = document.getElementById('f-satuan').value.trim();
+  const harga = parseFloat(document.getElementById('f-harga').value) || 0;
+
+  if (!nama || !satuan) { toast('Nama dan satuan wajib diisi!', '❌'); return; }
+
+  if (id) {
+    const i = DB[dept].findIndex(x => x.id === id);
+    DB[dept][i] = { ...DB[dept][i], nama, kategori, stok, min, satuan, harga, update: today() };
+    toast('Data berhasil diperbarui', '✓');
+  } else {
+    const newId = DB[dept].length ? Math.max(...DB[dept].map(x=>x.id)) + 1 : 1;
+    const kode = document.getElementById('f-kode-display').textContent;
+    DB[dept].push({ id:newId, kode, nama, kategori, stok, min, satuan, harga, update: today() });
+    toast('Bahan baru ditambahkan', '✓');
+  }
+  save(dept);
+  render(dept);
+  closeModal();
+}
+
+// ================================
+// QUICK UPDATE
+// ================================
+function quickUpdate(dept, id) {
+  const d = DB[dept].find(x => x.id === id);
+  const val = prompt(`Update stok "${d.nama}"\nStok sekarang: ${d.stok} ${d.satuan}\n\nMasukkan jumlah stok baru:`, d.stok);
+  if (val === null) return;
+  const num = parseFloat(val);
+  if (isNaN(num) || num < 0) { toast('Angka tidak valid!', '❌'); return; }
+  d.stok = num;
+  d.update = today();
+  save(dept);
+  render(dept);
+  toast(`${d.nama}: stok → ${num} ${d.satuan}`, '✓');
+}
+
+// ================================
+// DELETE
+// ================================
+function delItem(dept, id) {
+  const d = DB[dept].find(x => x.id === id);
+  if (!confirm(`Hapus "${d.nama}" dari daftar ${dept}?`)) return;
+  DB[dept] = DB[dept].filter(x => x.id !== id);
+  save(dept);
+  render(dept);
+  toast('Item dihapus', '✕');
+}
+
+// ================================
+// EXPORT CSV
+// ================================
+function exportCSV() {
+  const dept = curTab;
+  const headers = ['Departemen','Kode','Nama','Kategori','Stok','Min Stok','Satuan','Harga','Status','Update'];
+  const rows = DB[dept].map(d => [
+    dept.toUpperCase(), d.kode, d.nama, d.kategori, d.stok, d.min, d.satuan, d.harga,
+    status(d.stok,d.min), d.update
+  ]);
+  const csv = [headers,...rows].map(r=>r.join(',')).join('\n');
+  const a = Object.assign(document.createElement('a'), {
+    href: URL.createObjectURL(new Blob([csv],{type:'text/csv'})),
+    download: `stock_${dept}_${today()}.csv`
+  });
+  a.click();
+  toast(`Export ${dept.toUpperCase()} berhasil`, '⬇');
+}
+
+// ================================
+// TOAST
+// ================================
+function toast(msg, icon='✓') {
+  const el = document.getElementById('toast');
+  el.textContent = icon + '  ' + msg;
+  el.classList.add('show');
+  clearTimeout(el._t);
+  el._t = setTimeout(() => el.classList.remove('show'), 2500);
+}
+
+// ================================
+// INIT
+// ================================
+document.getElementById('overlay').addEventListener('click', e => {
+  if (e.target === e.currentTarget) closeModal();
+});
+
+const now = new Date();
+document.getElementById('today-badge').textContent =
+  now.toLocaleDateString('id-ID', {weekday:'short',day:'numeric',month:'short',year:'numeric'});
+
+render('bar');
+render('kitchen');
+</script>
+</body>
+</html>
